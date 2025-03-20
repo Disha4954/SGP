@@ -4,6 +4,7 @@ import Layout from "./Pages/Layout";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./Pages/HomePage";
 import ClassForm from "./Pages/ClassForm";
+import About from "./Components/About";
 import StudentForm from "./Pages/StudentForm";
 import ClassRoom from "./Pages/ClassRoom";
 import { ToastContainer } from "react-toastify";
