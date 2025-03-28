@@ -1,7 +1,7 @@
 import { Subject } from "@mui/icons-material";
-import React, { useState, useEffect, Component } from "react";
+import React, { useState, useEffect } from "react";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate } from "react-router";
 import yaml from "js-yaml";
 import { toast } from "react-toastify";
 import "../index.css";
@@ -21,9 +21,11 @@ function Form1() {
     latitude: 0.0,
     longitude: 0.0,
   });
+
   const [submitStatus, setsubmitStatus] = useState(false);
   const [formError, setformError] = useState(false);
 
+  // Get user’s current location
   useEffect(() => {
     navigator.geolocation.getCurrentPosition((position) => {
       setData((prevData) => ({
@@ -34,12 +36,11 @@ function Form1() {
     });
   }, []);
 
+  // Generate class link
   function toStudentForm(e) {
     e.preventDefault();
 
-    fetch(
-      `https://api-dot-adarsh-doing-project-123.el.r.appspot.com/generate-link/${classData.admin_id}`
-    )
+    fetch(`http://127.0.0.1:5000/generate-link/${classData.admin_id}`)
       .then((response) => response.json())
       .then((data) => {
         navigator.clipboard
@@ -56,9 +57,10 @@ function Form1() {
       });
   }
 
+  // Handle form submission
   function handleSubmit(e) {
     e.preventDefault();
-
+  
     if (
       classData.name &&
       classData.email &&
@@ -67,38 +69,43 @@ function Form1() {
       classData.section &&
       classData.subject &&
       classData.subjectCode &&
-      classData.radius
+      classData.radius > 0
     ) {
       const yamlData = yaml.dump(classData);
-      fetch("https://api-dot-adarsh-doing-project-123.el.r.appspot.com/class-data", {
+      
+      fetch("http://127.0.0.1:5000/class-data", {
         method: "POST",
         headers: {
           "Content-type": "application/x-yaml",
         },
         body: yamlData,
       })
-        .then((res) => res.text())
+        .then((res) => res.json())
         .then((result) => {
           console.log(result);
-          setsubmitStatus(true);
-
-          setTimeout(() => {
-            setsubmitStatus(false);
-            navigate("/class-room");
-          }, 5000);
+          if (result.Output) {
+            setsubmitStatus(true);
+            toast.success("Admin details stored successfully!");
+            
+            setTimeout(() => {
+              setsubmitStatus(false);
+              navigate("/class-room");
+            }, 2000);
+          } else {
+            toast.error("Failed to store admin details!");
+          }
         })
         .catch((err) => {
           console.error(err);
+          toast.error("Error submitting data!");
         });
-      navigate("/class-room");
     } else {
       setformError(true);
-
       setTimeout(() => {
         setformError(false);
-      }, 500);
+      }, 1000);
     }
-  }
+  }  
 
   return (
     <>
@@ -133,7 +140,7 @@ function Form1() {
           />
         </div>
 
-        {/* ID */}
+        {/* Admin ID */}
         <div className="mb-4">
           <label
             className="block text-gray-700 font-bold mb-2"
@@ -143,7 +150,7 @@ function Form1() {
           </label>
           <input
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="Admin_id"
+            id="admin_id"
             type="text"
             value={classData.admin_id}
             onChange={(e) =>
@@ -184,8 +191,8 @@ function Form1() {
             id="section"
             type="text"
             value={classData.section}
-            onChange={(event) =>
-              setData({ ...classData, section: event.target.value })
+            onChange={(e) =>
+              setData({ ...classData, section: e.target.value })
             }
             placeholder="Enter Section"
           />
@@ -204,8 +211,8 @@ function Form1() {
             id="subject"
             type="text"
             value={classData.subject}
-            onChange={(event) =>
-              setData({ ...classData, subject: event.target.value })
+            onChange={(e) =>
+              setData({ ...classData, subject: e.target.value })
             }
             placeholder="Enter Subject"
           />
@@ -221,11 +228,11 @@ function Form1() {
           </label>
           <input
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="subjectcode"
+            id="subjectCode"
             type="text"
             value={classData.subjectCode}
-            onChange={(event) =>
-              setData({ ...classData, subjectCode: event.target.value })
+            onChange={(e) =>
+              setData({ ...classData, subjectCode: e.target.value })
             }
             placeholder="Enter Subject Code"
           />
@@ -237,23 +244,23 @@ function Form1() {
             className="block text-gray-700 font-bold mb-2"
             htmlFor="radius"
           >
-            Max Radius(in meter):
+            Max Radius (in meters):
           </label>
           <input
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline custom-input"
-            id="maxradius"
+            id="radius"
             type="number"
             value={classData.radius > 0 ? classData.radius : ""}
-            onChange={(event) =>
-              setData({ ...classData, radius: parseFloat(event.target.value) })
+            onChange={(e) =>
+              setData({ ...classData, radius: parseFloat(e.target.value) })
             }
             placeholder="Enter Max Radius"
           />
         </div>
 
-        {/* Button */}
+        {/* Button Section */}
         <div className="flex items-center justify-center gap-8 mx-auto">
-          {/* Copy Student-Form link */}
+          {/* Generate Class Link */}
           <div className="mt-6 flex items-center justify-center">
             <button
               className="flex items-center gap-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -263,6 +270,7 @@ function Form1() {
               Generate Class Link
             </button>
           </div>
+
           {/* Submit */}
           <div className="mt-6 flex items-center justify-center">
             <button
@@ -274,6 +282,7 @@ function Form1() {
           </div>
         </div>
 
+        {/* Error Message */}
         {formError && (
           <div
             className={`fixed rounded-t-xl bottom-0 left-0 right-0 bg-red-500 text-white p-4 text-center text-lg font-semibold ${
@@ -284,6 +293,7 @@ function Form1() {
           </div>
         )}
 
+        {/* Success Message */}
         {submitStatus && (
           <div
             className={`fixed rounded-t-xl bottom-0 left-0 right-0 bg-green-500 text-white p-4 text-center text-lg font-semibold ${
